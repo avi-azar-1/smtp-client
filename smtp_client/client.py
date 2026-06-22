@@ -50,12 +50,7 @@ class SmtpClient:
                 raise SendError(f"SMTP error: {exc}") from exc
 
     def _connect(self) -> smtplib.SMTP:
-        try:
-            return smtplib.SMTP(self.host, self.port, timeout=self.timeout)
-        except (OSError, smtplib.SMTPConnectError) as exc:
-            raise ConnectionError(
-                f"Cannot connect to {self.host}:{self.port}: {exc}"
-            ) from exc
+        return smtplib.SMTP(self.host, self.port, timeout=self.timeout)
 
     def _disconnect(self) -> None:
         if self._connection is not None:
@@ -66,7 +61,12 @@ class SmtpClient:
             self._connection = None
 
     def __enter__(self) -> Self:
-        self._connection = self._connect()
+        try:
+            self._connection = self._connect()
+        except (OSError, smtplib.SMTPConnectError) as exc:
+            raise ConnectionError(
+                f"Cannot connect to {self.host}:{self.port}: {exc}"
+            ) from exc
         return self
 
     def __exit__(
